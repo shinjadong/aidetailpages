@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>상세페이지 생성기</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary-color: #4A90E2;
+            --secondary-color: #F5A623;
+            --error-color: #E74C3C;
+            --success-color: #2ECC71;
+            --border-radius: 12px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            background: white;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+        }
+        .section {
+            background: #ffffff;
+            border: 1px solid #edf2f7;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+        .section:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .preview-item {
+            background: #ffffff;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow-md);
+        }
+        .preview-content img {
+            width: 100%;
+            height: auto;
+            border-radius: var(--border-radius);
+        }
+        .edit-panel {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .preview-item h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .preview-item img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #357ABD;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #fff;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            margin-top: 10px;
+        }
+        .btn-secondary:hover {
+            background: #f8f9fa;
+            transform: translateY(-1px);
+        }
+        .btn-download {
+            background: var(--secondary-color);
+            color: white;
+            width: 100%;
+        }
+        .btn-download:hover {
+            background: #E59816;
+        }
+        .error { 
+            color: var(--error-color);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            background: rgba(231, 76, 60, 0.1);
+        }
+        .success {
+            color: var(--success-color);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            background: rgba(46, 204, 113, 0.1);
+        }
+        .file-input-wrapper {
+            margin: 15px 0;
+        }
+        .file-input-wrapper input[type="file"] {
+            margin-top: 8px;
+        }
+        .csv-guide {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .csv-guide code {
+            display: block;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .loading::after {
+            content: '생성 중...';
+            display: block;
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--primary-color);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .image-upload-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .image-upload-item {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 2px dashed #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .image-upload-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .image-preview {
+            min-height: 200px;
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Pretendard', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #999;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .edit-panel {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .text-controls, .style-controls {
+            margin-bottom: 15px;
+        }
+
+        .text-controls label, .style-controls label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .position-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 30px);
+            gap: 5px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .position-buttons button {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .editor-container {
+            position: relative;
+            width: 100%;
+            max-width: 1080px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .editor-container canvas {
+            width: 100%;
+            height: auto;
+            cursor: move;
+        }
+
+        .editor-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .editor-wrapper {
+            position: relative;
+            width: 100%;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 16px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 8px;
+            padding-right: 16px;
+            border-right: 1px solid #eee;
+        }
+
+        .style-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tool-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: #e9ecef;
+        }
+
+        .tool-btn.active {
+            background: #4A90E2;
+            color: #fff;
+        }
+
+        .font-select,
+        .font-size {
+            height: 36px;
+            padding: 0 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+        }
+
+        .color-picker {
+            width: 36px;
+            height: 36px;
+            padding: 2px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+        }
+
+        .editor-canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .text-controls {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .position-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 30px);
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .size-slider {
+            width: 100%;
+            height: 6px;
+            margin: 10px 0;
+        }
+
+        .color-picker {
+            width: 40px;
+            height: 40px;
+            padding: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .success, .error {
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 20px 0;
+            font-weight: 500;
+        }
+
+        .success {
+            background: #f0fff4;
+            border: 1px solid #c6f6d5;
+            color: #2f855a;
+        }
+
+        .error {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            color: #c53030;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .image-upload-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-panel {
+                padding: 15px;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .preview-item {
+                padding: 15px;
+            }
+            
+            .section {
+                padding: 15px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 style="margin-bottom: 30px; color: #2c3e50;">상세페이지 생성기</h1>
+
+        <div class="section">
+            <h2>0. 기본 정보 입력</h2>
+            <div class="input-group">
+                <label for="storeName">스토어/제품명</label>
+                <input 
+                    type="text" 
+                    id="storeName" 
+                    class="form-input" 
+                    placeholder="메인 섹션에 표시될 스토어명 또는 제품명을 입력하세요"
+                    required
+                >
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>1. CSV 파일 업로드</h2>
+            <p>아래 형식의 CSV 파일을 업로드하세요.</p>
+            <div class="csv-guide">
+                <strong>CSV 파일 형식:</strong>
+                <code>
+                    head_copy1,head_copy2,main_copy,lead_copy,point_header1,point_body1,point_header2,point_body2,point_header3,point_body3,product_name<br>
+                    "후킹 카피","솔루션 제시","제품소개 카피","왜 사야하는가","디테일 헤더1","제품장점1","디테일 헤더2","제품장점2","디테일 헤더3","제품장점3","제품명"
+                </code>
+                <button onclick="downloadExample()" class="btn btn-secondary" style="margin-top: 10px;">
+                    예시 CSV 다운로드
+                </button>
+            </div>
+            <div class="file-input-wrapper">
+                <input type="file" id="csvFile" accept=".csv">
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>2. 이미지 업로드</h2>
+            <div class="image-upload-container">
+                <div class="image-upload-item">
+                    <h3>메인 이미지</h3>
+                    <input type="file" id="mainImage" accept="image/*">
+                    <div class="image-preview"></div>
+                </div>
+                
+                <div class="image-upload-item">
+                    <h3>포인트 섹션 이미지 1</h3>
+                    <input type="file" id="pointImage1" accept="image/*">
+                    <div class="image-preview"></div>
+                </div>
+                
+                <div class="image-upload-item">
+                    <h3>포인 섹션 이미지 2</h3>
+                    <input type="file" id="pointImage2" accept="image/*">
+                    <div class="image-preview"></div>
+                </div>
+                
+                <div class="image-upload-item">
+                    <h3>포인트 섹션 이미지 3</h3>
+                    <input type="file" id="pointImage3" accept="image/*">
+                    <div class="image-preview"></div>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="generatePages()" class="btn btn-primary" style="width: 100%;">
+            상세페이지 생성
+        </button>
+
+        <div id="loading" class="loading"></div>
+        <div id="errorMsg" class="error" style="display: none;"></div>
+        <div id="successMsg" class="success" style="display: none;"></div>
+
+        <div id="previewSection" class="preview-container"></div>
+        <button onclick="downloadAllSections()" class="btn btn-primary" style="margin-top: 20px; width: 100%;">
+            전체 섹션 다운로드 (ZIP)
+        </button>
+
+        <button onclick="downloadAllPages()" class="btn btn-secondary" style="width: 100%; margin-top: 20px;">
+            전체 다운로드
+        </button>
+    </div>
+
+    <script>
+        class DetailPageGenerator {
+            constructor() {
+                this.canvas = document.createElement('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.templates = {
+                    headCopy: {
+                        width: 1080,
+                        height: 540,
+                        fontSize: {
+                            main: 72,
+                            sub: 48
+                        },
+                        textPosition: { x: 540, y: 270 },
+                        letterSpacing: '-0.05em',
+                        lineHeight: 1.4,
+                        padding: 80,
+                        textColor: '#333333'
+                    },
+                    mainSection: {
+                        width: 1080,
+                        height: 1920,
+                        fontSize: {
+                            title: 90,
+                            sub: 32
+                        },
+                        textPosition: { x: 100, y: 200 },
+                        letterSpacing: '-0.05em',
+                        lineHeight: 1.2,
+                        overlay: {
+                            opacity: 0.7,  // 기본 투명도
+                            startColor: 'rgba(255, 255, 255, 0.9)',
+                            endColor: 'rgba(255, 255, 255, 0)'
+                        }
+                    },
+                    pointSection: {
+                        width: 1080,
+                        height: 2400,
+                        fontSize: {
+                            header: 48,
+                            body: 36
+                        },
+                        padding: {
+                            top: 40,
+                            side: 50
+                        },
+                        circles: {
+                            radius: 200,
+                            spacing: 800  // 동그라미 간격
+                        }
+                    }
+                };
+            }
+
+            async generateHeadCopy(text, background = '#FFFFFF', position = null) {
+                const template = this.templates.headCopy;
+                const { width, height } = template;
+                
+                this.canvas.width = width * 2;
+                this.canvas.height = height * 2;
+                this.ctx.scale(2, 2);
+
+                // 배경
+                this.ctx.fillStyle = background;
+                this.ctx.fillRect(0, 0, width, height);
+
+                // 텍스트 스타일
+                this.ctx.fillStyle = template.textColor;
+                this.ctx.font = `bold ${template.fontSize.main}px Pretendard`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+
+                // 텍스트 위치
+                const textX = position ? position.x : template.textPosition.x;
+                const textY = position ? position.y : template.textPosition.y;
+
+                // 텍스트 그리기
+                const lines = this.wrapText(text, width - template.padding * 2);
+                const lineHeight = template.fontSize.main * template.lineHeight;
+                lines.forEach((line, i) => {
+                    this.ctx.fillText(line, textX, textY + (i - lines.length/2) * lineHeight);
+                });
+
+                return this.canvas.toDataURL('image/png', 1.0);
+            }
+
+            async generateMainSection(image, text, options = {}) {
+                const template = this.templates.mainSection;
+                const { width, height } = template;
+                
+                this.canvas.width = width * 2;
+                this.canvas.height = height * 2;
+                this.ctx.scale(2, 2);
+                
+                // 이미지 그리기
+                const img = await this.loadImage(image);
+                this.drawImageProp(this.ctx, img, 0, 0, width, height);
+
+                // 그라데이션 오버레이 (조절 가능)
+                const opacity = options.overlayOpacity || template.overlay.opacity;
+                const gradient = this.ctx.createLinearGradient(0, 0, 0, height);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`);
+                gradient.addColorStop(0.3, `rgba(255, 255, 255, ${opacity * 0.8})`);
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, width, height);
+
+                // 텍스트 위치 및 스타일
+                const textPos = options.textPosition || template.textPosition;
+                this.ctx.font = `300 ${template.fontSize.title}px Pretendard`;
+                this.ctx.fillStyle = options.textColor || '#333333';
+                this.ctx.textAlign = 'left';
+                
+                // 텍스트 그리기
+                const lines = this.wrapText(text, width - 200);
+                lines.forEach((line, i) => {
+                    const opacity = 1 - (i * 0.15);
+                    const fontSize = template.fontSize.title - (i * 10);
+                    this.ctx.font = `300 ${fontSize}px Pretendard`;
+                    this.ctx.fillStyle = `rgba(51, 51, 51, ${opacity})`;
+                    this.ctx.fillText(line, textPos.x, textPos.y + i * fontSize * 1.3);
+                });
+
+                return this.canvas.toDataURL('image/png', 1.0);
+            }
+
+            async generatePointSection(images, headers, bodies) {
+                const template = this.templates.pointSection;
+                const { width, height } = template;
+                
+                this.canvas.width = width * 2;
+                this.canvas.height = height * 2;
+                this.ctx.scale(2, 2);
+                
+                // 배경
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.fillRect(0, 0, width, height);
+                
+                const sectionHeight = height / 3;
+                
+                // 3개의 포인트 섹션 생성
+                for (let i = 0; i < 3; i++) {
+                    const centerY = (i * sectionHeight) + (sectionHeight / 2);
+                    const centerX = width / 2;
+                    const radius = Math.min(width, sectionHeight) * 0.25;
+                    
+                    // 원형 배경
+                    this.ctx.fillStyle = '#F8F8F8';
+                    this.ctx.beginPath();
+                    this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    // 이미지
+                    if (images[i]) {
+                        this.ctx.save();
+                        this.ctx.beginPath();
+                        this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                        this.ctx.clip();
+
+                        const img = await this.loadImage(images[i]);
+                        const imgSize = Math.min(img.width, img.height);
+                        const scale = (radius * 2) / imgSize;
+                        const scaledWidth = img.width * scale;
+                        const scaledHeight = img.height * scale;
+                        
+                        const x = centerX - (scaledWidth / 2);
+                        const y = centerY - (scaledHeight / 2);
+                        this.ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+                        
+                        this.ctx.restore();
+                    }
+
+                    // 텍스트 영역
+                    const textY = centerY + radius + 40;
+                    
+                    // 헤더
+                    this.ctx.font = `bold ${template.fontSize.header}px Pretendard`;
+                    this.ctx.fillStyle = '#333333';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    
+                    const headerLines = this.wrapText(headers[i], width - 200);
+                    let currentY = textY;
+                    
+                    headerLines.forEach(line => {
+                        this.ctx.fillText(line, centerX, currentY);
+                        currentY += template.fontSize.header * 1.2;
+                    });
+                    
+                    // 본문
+                    this.ctx.font = `normal ${template.fontSize.body}px Pretendard`;
+                    this.ctx.fillStyle = '#666666';
+                    currentY += 20;
+                    
+                    const bodyLines = this.wrapText(bodies[i], width - 240);
+                    bodyLines.forEach(line => {
+                        this.ctx.fillText(line, centerX, currentY);
+                        currentY += template.fontSize.body * 1.2;
+                    });
+                }
+
+                return this.canvas.toDataURL('image/png', 1.0);
+            }
+
+            drawImageProp(ctx, img, x, y, w, h) {
+                const { width: iw, height: ih } = img;
+                const ratio = Math.min(w / iw, h / ih);
+                const nw = iw * ratio, nh = ih * ratio;
+                x = (w - nw) * 0.5;
+                y = (h - nh) * 0.5;
+                ctx.drawImage(img, x, y, nw, nh);
+            }
+
+            loadImage(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = reject;
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            wrapText(text, maxWidth) {
+                const words = text.split('');
+                const lines = [];
+                let currentLine = '';
+                
+                for (let char of words) {
+                    const testLine = currentLine + char;
+                    const metrics = this.ctx.measureText(testLine);
+                    
+                    // 한글 특성을 고려한 줄바꿈 처리
+                    if (metrics.width > maxWidth) {
+                        lines.push(currentLine);
+                        currentLine = char;
+                    } else {
+                        currentLine = testLine;
+                    }
+                    
+                    // 문장 부호에 따른 자연스러운 줄바꿈
+                    if (['.', '!', '?', ','].includes(char)) {
+                        lines.push(currentLine);
+                        currentLine = '';
+                    }
+                }
+                
+                if (currentLine) {
+                    lines.push(currentLine);
+                }
+                
+                return lines;
+            }
+        }
+
+        async function generatePages() {
+            const loading = document.getElementById('loading');
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+            const previewSection = document.getElementById('previewSection');
+
+            loading.style.display = 'block';
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            try {
+                const storeName = document.getElementById('storeName').value.trim();
+                if (!storeName) {
+                    throw new Error('스토어/제품명을 입력해주세요.');
+                }
+
+                const csvFile = document.getElementById('csvFile').files[0];
+                const mainImage = document.getElementById('mainImage').files[0];
+                const pointImage1 = document.getElementById('pointImage1').files[0];
+                const pointImage2 = document.getElementById('pointImage2').files[0];
+                const pointImage3 = document.getElementById('pointImage3').files[0];
+                
+                if (!csvFile || !mainImage || !pointImage1 || !pointImage2 || !pointImage3) {
+                    throw new Error('모든 필수 이미지와 CSV 파일을 업로드해주세요.');
+                }
+
+                // CSV 데이터 읽기
+                const csvData = await readCSV(csvFile);
+                
+                // 상세페이지 생성
+                const generator = new DetailPageGenerator();
+                previewSection.innerHTML = '';
+
+                // 헤드카피 1
+                const headCopy1 = await generator.generateHeadCopy(csvData.head_copy1);
+                addPreview(headCopy1, '헤드카피 1');
+
+                // 헤드카피 2
+                const headCopy2 = await generator.generateHeadCopy(csvData.head_copy2);
+                addPreview(headCopy2, '헤드카피 2');
+
+                // 메인 섹션
+                const mainSection = await generator.generateMainSection(
+                    mainImage,
+                    storeName
+                );
+                addPreview(mainSection, '메인 섹션');
+
+                // 포인트 섹션 생성 (3개를 나로 통합)
+                const pointSection = await generator.generatePointSection(
+                    [pointImage1, pointImage2, pointImage3],
+                    [csvData.point_header1, csvData.point_header2, csvData.point_header3],
+                    [csvData.point_body1, csvData.point_body2, csvData.point_body3]
+                );
+                addPreview(pointSection, '포인트 섹션');
+
+                successMsg.textContent = '상세페이지가 성공적으로 생성되었습니다!';
+                successMsg.style.display = 'block';
+
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function addPreview(dataUrl, title) {
+            const previewSection = document.getElementById('previewSection');
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            
+            let controlsHtml = `
+                <div class="control-group">
+                    <label>텍스트 위치</label>
+                    <div class="position-controls">
+                        <button onclick="adjustTextPosition('${title}', 'up')" class="btn btn-sm">↑</button>
+                        <button onclick="adjustTextPosition('${title}', 'down')" class="btn btn-sm">↓</button>
+                        <button onclick="adjustTextPosition('${title}', 'left')" class="btn btn-sm">←</button>
+                        <button onclick="adjustTextPosition('${title}', 'right')" class="btn btn-sm">→</button>
+                    </div>
+                </div>
+            `;
+
+            // 메인 섹션일 경우 흐림 효과 컨트롤 추가
+            if (title === '메인 섹션') {
+                controlsHtml += `
+                    <div class="control-group">
+                        <label>이미지 흐림 효과</label>
+                        <input 
+                            type="range" 
+                            min="0" 
+                            max="100" 
+                            value="70" 
+                            oninput="adjustOverlay('${title}', this.value, event)"
+                            class="overlay-slider"
+                        >
+                    </div>
+                `;
+            }
+
+            div.innerHTML = `
+                <div class="preview-header">
+                    <h3>${title}</h3>
+                </div>
+                <img src="${dataUrl}" alt="${title}">
+                <div class="control-panel">
+                    ${controlsHtml}
+                </div>
+                <button onclick="downloadImage('${dataUrl}', '${title}')" class="btn btn-download">
+                    다운로드
+                </button>
+            `;
+            
+            previewSection.appendChild(div);
+        }
+
+        // 흐림 효과 조절 함수
+        function adjustOverlay(title, value, e) {
+            if (e) e.preventDefault();
+            
+            const opacity = value / 100;
+            const previewItem = document.querySelector(`.preview-item:has(h3:contains('${title}'))`);
+            const generator = window.currentGenerator;
+            
+            const mainImage = document.getElementById('mainImage').files[0];
+            const text = document.getElementById('storeName').value;
+            
+            if (mainImage && text) {
+                generator.templates.mainSection.overlay.opacity = opacity;
+                generator.generateMainSection(mainImage, text).then(dataUrl => {
+                    const img = previewItem.querySelector('img');
+                    img.src = dataUrl;
+                });
+            }
+        }
+
+        function toggleEdit(title) {
+            const previewItems = document.querySelectorAll('.preview-item');
+            previewItems.forEach(item => {
+                if (item.querySelector('h3').textContent === title) {
+                    const editPanel = item.querySelector('.edit-panel');
+                    editPanel.style.display = editPanel.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+        }
+
+        async function updateText(input, title) {
+            const previewItem = input.closest('.preview-item');
+            const img = previewItem.querySelector('img');
+            const generator = new DetailPageGenerator();
+
+            try {
+                let newDataUrl;
+                if (title === '메인 섹션') {
+                    const mainImage = document.getElementById('mainImage').files[0];
+                    newDataUrl = await generator.generateMainSection(mainImage, input.value);
+                } else if (title.includes('헤드카피')) {
+                    newDataUrl = await generator.generateHeadCopy(input.value);
+                }
+
+                if (newDataUrl) {
+                    img.src = newDataUrl;
+                }
+            } catch (error) {
+                console.error('이미지 업데이트 중 오류:', error);
+            }
+        }
+
+        function updateFontSize(input, title) {
+            const previewItem = input.closest('.preview-item');
+            const generator = new DetailPageGenerator();
+            
+            if (title === '메인 섹션') {
+                generator.templates.mainSection.fontSize.title = parseInt(input.value);
+            } else if (title.includes('헤드카피')) {
+                generator.templates.headCopy.fontSize.main = parseInt(input.value);
+            }
+            
+            const textInput = previewItem.querySelector('.text-input');
+            updateText(textInput, title);
+        }
+
+        function adjustPosition(direction, title) {
+            const previewItem = document.querySelector(`.preview-item h3:contains('${title}')`).closest('.preview-item');
+            const textInput = previewItem.querySelector('.text-input');
+            const generator = new DetailPageGenerator();
+            const adjustment = 10;
+
+            if (title === '메인 섹션') {
+                switch(direction) {
+                    case 'up':
+                        generator.templates.mainSection.padding.top -= adjustment;
+                        break;
+                    case 'down':
+                        generator.templates.mainSection.padding.top += adjustment;
+                        break;
+                    case 'left':
+                        generator.templates.mainSection.padding.side -= adjustment;
+                        break;
+                    case 'right':
+                        generator.templates.mainSection.padding.side += adjustment;
+                        break;
+                }
+            }
+
+            updateText(textInput, title);
+        }
+
+        const csvExample = `head_copy1,head_copy2,main_copy,lead_copy,point_header1,point_body1,point_header2,point_body2,point_header3,point_body3,product_name
+"후킹 카피","솔루션 제시","제품소개 피","왜 사야하는가","디테일 헤더1","제품장점1","디테일 헤더2","제품장점2","디테일 헤더3","제품장점3","제품명"`;
+
+        function downloadExample() {
+            const blob = new Blob([csvExample], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "상세페이지_예시.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function readCSV(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    try {
+                        const decoder = new TextDecoder('utf-8');
+                        const text = decoder.decode(e.target.result);
+                        const rows = text.trim().split('\n');
+                        
+                        if (rows.length < 2) {
+                            throw new Error('CSV 파일은 헤더와 데이터 행이 필요합니다.');
+                        }
+
+                        const expectedHeaders = [
+                            'head_copy1', 'head_copy2', 'main_copy', 'lead_copy',
+                            'point_header1', 'point_body1', 'point_header2', 'point_body2',
+                            'point_header3', 'point_body3', 'product_name'
+                        ];
+
+                        // CSV 파싱 (쉼표 내의 따옴표 처리)
+                        const parseCSVLine = (line) => {
+                            const entries = [];
+                            let entry = '';
+                            let inQuotes = false;
+                            
+                            for (let i = 0; i < line.length; i++) {
+                                const char = line[i];
+                                
+                                if (char === '"') {
+                                    inQuotes = !inQuotes;
+                                    continue;
+                                }
+                                
+                                if (char === ',' && !inQuotes) {
+                                    entries.push(entry.trim());
+                                    entry = '';
+                                    continue;
+                                }
+                                
+                                entry += char;
+                            }
+                            
+                            entries.push(entry.trim());
+                            return entries;
+                        };
+
+                        const headers = parseCSVLine(rows[0]);
+                        const values = parseCSVLine(rows[1]);
+
+                        // 헤더 검증
+                        if (headers.length !== expectedHeaders.length) {
+                            throw new Error('CSV 파일 형식이 올바르지 않습니다. 예시 파일을 운로드하여 확인해주세요.');
+                        }
+
+                        const data = {};
+                        headers.forEach((header, i) => {
+                            const cleanHeader = header.replace(/^["']|["']$/g, '').trim();
+                            const cleanValue = values[i] ? values[i].replace(/^["']|["']$/g, '').trim() : '';
+                            data[cleanHeader] = cleanValue;
+                        });
+
+                        // 필수 필드 검증
+                        for (const header of expectedHeaders) {
+                            if (!data[header]) {
+                                throw new Error(`${header} 값이 비어있습니다.`);
+                            }
+                        }
+
+                        resolve(data);
+                    } catch (error) {
+                        console.error('CSV 파싱 오류:', error);
+                        reject(new Error(`CSV 파일 처리 중 오류: ${error.message}`));
+                    }
+                };
+                reader.onerror = () => reject(new Error('CSV 파일을 는 중 오류가 발생했습니다.'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        function downloadImage(dataUrl, title) {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `${title}_${timestamp}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // 파일 입력 변경 시 미리보기 초기화
+        document.getElementById('csvFile').addEventListener('change', () => {
+            document.getElementById('previewSection').innerHTML = '';
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+        });
+
+        document.getElementById('mainImage').addEventListener('change', () => {
+            document.getElementById('previewSection').innerHTML = '';
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+        });
+
+        function downloadAllPages() {
+            const previewItems = document.querySelectorAll('.preview-item');
+            const downloadLinks = [];
+
+            previewItems.forEach(item => {
+                const img = item.querySelector('img');
+                const title = item.querySelector('h3').textContent;
+                const dataUrl = img.src;
+                const downloadLink = document.createElement('a');
+                downloadLink.href = dataUrl;
+                downloadLink.download = `${title}.png`;
+                downloadLink.click();
+                downloadLinks.push(downloadLink);
+            });
+
+            // 다운로드 완료 후 링크 제거
+            downloadLinks.forEach(link => link.remove());
+        }
+
+        async function downloadAllSections() {
+            const zip = new JSZip();
+            const images = document.querySelectorAll('.preview-item img');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+            try {
+                for (let i = 0; i < images.length; i++) {
+                    const response = await fetch(images[i].src);
+                    const blob = await response.blob();
+                    const fileName = `section_${i + 1}.png`;
+                    zip.file(fileName, blob);
+                }
+
+                const content = await zip.generateAsync({type: 'blob'});
+                const zipName = `상세페이지_${timestamp}.zip`;
+
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = zipName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('ZIP 생성 중 오류:', error);
+                alert('다운로드 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 텍스트 위치 조정 함수
+        function adjustTextPosition(title, direction, e) {
+            if (e) e.preventDefault();
+            
+            const generator = window.currentGenerator;
+            const adjustment = 10;
+            const template = generator.templates[title === '메인 섹션' ? 'mainSection' : 'headCopy'];
+
+            switch(direction) {
+                case 'up':
+                    template.textPosition.y -= adjustment;
+                    break;
+                case 'down':
+                    template.textPosition.y += adjustment;
+                    break;
+                case 'left':
+                    template.textPosition.x -= adjustment;
+                    break;
+                case 'right':
+                    template.textPosition.x += adjustment;
+                    break;
+            }
+
+            updatePreview(title);
+        }
+
+        // 프리뷰 업데이트 함수
+        async function updatePreview(title) {
+            const generator = window.currentGenerator;
+            const previewItem = document.querySelector(`.preview-item h3:contains('${title}')`).closest('.preview-item');
+            const img = previewItem.querySelector('img');
+            
+            let newDataUrl;
+            if (title === '메인 섹션') {
+                const mainImage = document.getElementById('mainImage').files[0];
+                const text = document.getElementById('storeName').value;
+                newDataUrl = await generator.generateMainSection(mainImage, text);
+            } else if (title.includes('헤드카피')) {
+                const text = title === '헤드카피 1' ? csvData.head_copy1 : csvData.head_copy2;
+                newDataUrl = await generator.generateHeadCopy(text);
+            }
+
+            if (newDataUrl) {
+                img.src = newDataUrl;
+            }
+        }
+
+        function adjustFontSize(title, size) {
+            const generator = new DetailPageGenerator();
+            if (title.includes('헤드')) {
+                generator.templates.headCopy.fontSize.main = parseInt(size);
+            } else {
+                generator.templates.mainSection.fontSize.title = parseInt(size);
+            }
+            generatePages();
+        }
+
+        function adjustTextColor(title, color) {
+            const generator = new DetailPageGenerator();
+            if (title.includes('헤드')) {
+                generator.templates.headCopy.textColor = color;
+            } else {
+                generator.templates.mainSection.textColor = color;
+            }
+            generatePages();
+        }
+    </script>
+</body>
+</html>
